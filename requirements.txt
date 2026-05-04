@@ -11,3 +11,5 @@ snscrape
 httpx
 tensorflow==2.15.0
 huggingface-hub>=0.16.4
+transformers>=4.38.0
+torch>=2.1.0
