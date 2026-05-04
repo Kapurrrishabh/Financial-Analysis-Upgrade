@@ -1,7 +1,14 @@
 frontend/
-backend/models/
 backend/__pycache__/
 __pycache__/
 .git/
 .vercel/
 node_modules/
+
+# Keep model code (e.g., backend/models/pattern_recognition.py) but exclude heavy local artifacts.
+backend/models/**/*.safetensors
+backend/models/**/*.keras
+backend/models/**/*.h5
+backend/models/**/*.bin
+backend/models/**/*.pkl
+backend/models/**/*.zip
