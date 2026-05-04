@@ -63,6 +63,11 @@ def _load_artifacts_from_hf() -> Optional[TransformerArtifacts]:
                 repo_type="model",
             )
         ).parent
+        hf_hub_download(
+            repo_id=TRANSFORMER_MODEL_REPO,
+            filename="model/model.safetensors",
+            repo_type="model",
+        )
 
         metadata = json.loads(Path(metadata_path).read_text(encoding="utf-8"))
         ticker_to_id = json.loads(Path(ticker_path).read_text(encoding="utf-8"))
