@@ -13,6 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(mes
 logger = logging.getLogger("sentiment")
 
 ROOT = Path(__file__).resolve().parents[2]  # go to project root
+SENTIMENT_MODEL_REPO = "Rishabhkapur/financial-analysis-upgrade-sentiment"
 
 # Global cache (so model loads only once)
 _tokenizer = None
@@ -25,19 +26,17 @@ def get_model():
     if _model is not None and _tokenizer is not None:
         return _tokenizer, _model
 
-    model_dir = ROOT / "backend" / "models" / "sentiment_model" / "sentiment_expert_model_v1"
-
-    if not model_dir.exists():
-        logger.warning("⚠️ Sentiment model not found — using fallback")
-        return None, None
-
     logger.info("🔄 Loading HuggingFace model (first time)...")
 
     from transformers import AutoTokenizer, AutoModelForSequenceClassification
     import torch
 
-    _tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
-    _model = AutoModelForSequenceClassification.from_pretrained(str(model_dir))
+    try:
+        _tokenizer = AutoTokenizer.from_pretrained(SENTIMENT_MODEL_REPO)
+        _model = AutoModelForSequenceClassification.from_pretrained(SENTIMENT_MODEL_REPO)
+    except Exception as exc:
+        logger.warning("⚠️ Sentiment model repo unavailable; using fallback scoring: %s", exc)
+        return None, None
 
     _model.eval()
 

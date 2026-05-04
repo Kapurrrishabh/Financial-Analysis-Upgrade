@@ -1,0 +1,7 @@
+frontend/
+backend/models/
+backend/__pycache__/
+__pycache__/
+.git/
+.vercel/
+node_modules/

@@ -217,6 +217,26 @@ interface StockData {
   fundamental_score?: number;
   technical_signal?: string;
   decision?: string;
+  decision_details?: {
+    short_term?: {
+      decision?: string;
+      confidence?: number;
+      reason?: string;
+      weights?: Record<string, number>;
+    };
+    long_term?: {
+      decision?: string;
+      confidence?: number;
+      reason?: string;
+      weights?: Record<string, number>;
+    };
+    overall?: {
+      decision?: string;
+      confidence?: number;
+      reason?: string;
+      weights?: Record<string, number>;
+    };
+  };
   explanation: string;
   pattern?: PatternInfo;
   prediction?: PredictionInfo;

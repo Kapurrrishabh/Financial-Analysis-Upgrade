@@ -45,6 +45,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TECH_MODEL_PATH    = ROOT / "models" / "technical_model" / "gru_stock_classifier-2.keras"
 TECH_FEATURE_PATH  = ROOT / "models" / "technical_model" / "feature_columns.json"
 SENTIMENT_MODEL_PATH = ROOT / "models" / "sentiment_model" / "sentiment_expert_model_v1"
+SENTIMENT_MODEL_REPO = "Rishabhkapur/financial-analysis-upgrade-sentiment"
 
 _PRICE_CACHE: Dict[Tuple[str, str], pd.DataFrame] = {}
 _SENTIMENT_MODEL = None
@@ -233,10 +234,6 @@ def _load_sentiment_model():
     if _SENTIMENT_MODEL is not None and _SENTIMENT_TOKENIZER is not None:
         return _SENTIMENT_TOKENIZER, _SENTIMENT_MODEL
 
-    if not SENTIMENT_MODEL_PATH.exists():
-        logger.info("Sentiment model path not found; using fallback scoring")
-        return None, None
-
     try:
         transformers = importlib.import_module("transformers")
         torch        = importlib.import_module("torch")
@@ -245,18 +242,14 @@ def _load_sentiment_model():
         return None, None
 
     try:
-        _SENTIMENT_TOKENIZER = transformers.AutoTokenizer.from_pretrained(
-            str(SENTIMENT_MODEL_PATH)
-        )
-        _SENTIMENT_MODEL = transformers.AutoModelForSequenceClassification.from_pretrained(
-            str(SENTIMENT_MODEL_PATH)
-        )
+        _SENTIMENT_TOKENIZER = transformers.AutoTokenizer.from_pretrained(SENTIMENT_MODEL_REPO)
+        _SENTIMENT_MODEL = transformers.AutoModelForSequenceClassification.from_pretrained(SENTIMENT_MODEL_REPO)
         _SENTIMENT_MODEL.eval()
         _SENTIMENT_MODEL.to(torch.device("cpu"))
-        logger.info("Loaded sentiment model from %s", SENTIMENT_MODEL_PATH)
+        logger.info("Loaded sentiment model from Hugging Face repo %s", SENTIMENT_MODEL_REPO)
         return _SENTIMENT_TOKENIZER, _SENTIMENT_MODEL
     except Exception as exc:
-        logger.warning("Failed to load sentiment model: %s", exc)
+        logger.warning("Failed to load sentiment model from Hugging Face: %s", exc)
         _SENTIMENT_MODEL = _SENTIMENT_TOKENIZER = None
         return None, None
 

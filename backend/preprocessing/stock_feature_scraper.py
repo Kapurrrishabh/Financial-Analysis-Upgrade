@@ -8,7 +8,7 @@ import pandas as pd
 import yfinance as yf
 
 from keras.models import load_model
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from huggingface_hub import hf_hub_download
 import torch
 
 import pandas_ta as ta
@@ -19,6 +19,10 @@ logger = logging.getLogger("orchestrator")
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+TECHNICAL_MODEL_REPO = "Rishabhkapur/financial-analysis-upgrade-technical"
+TECHNICAL_MODEL_FILE = "gru_stock_classifier-2.keras"
+TECHNICAL_FEATURE_FILE = "feature_columns.json"
 
 # Global cache for technical model and feature columns
 TECH_MODEL = None
@@ -32,20 +36,22 @@ def _load_tech_model_and_features():
         return TECH_MODEL, FEATURE_COLS
     if _TECH_MODEL_LOAD_FAILED:
         return None, FEATURE_COLS
-    model_path = ROOT / 'backend' / 'models' / 'technical_model' / 'gru_stock_classifier-2.keras'
-    feat_path = ROOT / 'backend' / 'models' / 'technical_model' / 'feature_columns.json'
-    if model_path.exists() and feat_path.exists():
-        try:
-            TECH_MODEL = load_model(str(model_path))
-        except Exception as e:
-            logger.warning("Failed loading technical model: %s", e)
-            TECH_MODEL = None
-            _TECH_MODEL_LOAD_FAILED = True
-        try:
-            FEATURE_COLS = json.loads(feat_path.read_text())
-        except Exception:
-            FEATURE_COLS = None
-    else:
+
+    try:
+        model_path = hf_hub_download(
+            repo_id=TECHNICAL_MODEL_REPO,
+            filename=TECHNICAL_MODEL_FILE,
+            repo_type="model",
+        )
+        feat_path = hf_hub_download(
+            repo_id=TECHNICAL_MODEL_REPO,
+            filename=TECHNICAL_FEATURE_FILE,
+            repo_type="model",
+        )
+        TECH_MODEL = load_model(model_path)
+        FEATURE_COLS = json.loads(Path(feat_path).read_text())
+    except Exception as e:
+        logger.warning("Failed loading technical model from Hugging Face: %s", e)
         TECH_MODEL = None
         FEATURE_COLS = None
         _TECH_MODEL_LOAD_FAILED = True

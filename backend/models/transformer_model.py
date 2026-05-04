@@ -10,12 +10,14 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
+from huggingface_hub import hf_hub_download
 
 from backend.utils.preprocessing import future_business_dates, history_payload, normalize_price_frame
 
 logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parents[2]
+TRANSFORMER_MODEL_REPO = "Rishabhkapur/financial-analysis-upgrade-transformer"
 
 
 @dataclass(frozen=True)
@@ -35,6 +37,51 @@ def _candidate_dirs() -> list[Path]:
         ROOT / "finintel_ts_transformer" / "exported_assets",
         ROOT / "backend" / "models" / "exported_assets",
     ]
+
+
+def _load_artifacts_from_hf() -> Optional[TransformerArtifacts]:
+    try:
+        metadata_path = hf_hub_download(
+            repo_id=TRANSFORMER_MODEL_REPO,
+            filename="metadata.json",
+            repo_type="model",
+        )
+        ticker_path = hf_hub_download(
+            repo_id=TRANSFORMER_MODEL_REPO,
+            filename="ticker_encoder.json",
+            repo_type="model",
+        )
+        scalers_path = hf_hub_download(
+            repo_id=TRANSFORMER_MODEL_REPO,
+            filename="ticker_scalers.pkl",
+            repo_type="model",
+        )
+        model_dir = Path(
+            hf_hub_download(
+                repo_id=TRANSFORMER_MODEL_REPO,
+                filename="model/config.json",
+                repo_type="model",
+            )
+        ).parent
+
+        metadata = json.loads(Path(metadata_path).read_text(encoding="utf-8"))
+        ticker_to_id = json.loads(Path(ticker_path).read_text(encoding="utf-8"))
+        with open(scalers_path, "rb") as handle:
+            ticker_scalers = pickle.load(handle)
+
+        return TransformerArtifacts(
+            model_dir=model_dir,
+            metadata=metadata,
+            ticker_to_id=ticker_to_id,
+            ticker_scalers=ticker_scalers,
+            context_length=int(metadata.get("context_length", 60)),
+            prediction_length=int(metadata.get("prediction_length", 30)),
+            history_length=int(metadata.get("history_length", 67)),
+            device="cuda" if _cuda_available() else "cpu",
+        )
+    except Exception as exc:
+        logger.warning("Unable to load transformer artifacts from Hugging Face: %s", exc)
+        return None
 
 
 def _cuda_available() -> bool:
@@ -71,6 +118,9 @@ def _load_artifacts() -> Optional[TransformerArtifacts]:
                 )
             except Exception as exc:
                 logger.warning("Unable to load transformer artifacts from %s: %s", candidate, exc)
+    hf_artifacts = _load_artifacts_from_hf()
+    if hf_artifacts is not None:
+        return hf_artifacts
     logger.warning("Transformer artifact bundle not found; falling back to deterministic forecast.")
     return None
 

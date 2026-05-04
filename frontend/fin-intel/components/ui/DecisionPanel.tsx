@@ -20,7 +20,7 @@ export default function DecisionPanel({ decision }: { decision?: any }) {
           {Object.entries(block.weights).map(([k,v]) => (
             <div key={k} className="flex justify-between text-xs">
               <span className="capitalize">{k}</span>
-              <span className="font-bold">{Math.round((v||0)*100)}%</span>
+              <span className="font-bold">{Math.round(((typeof v === "number" ? v : 0) || 0) * 100)}%</span>
             </div>
           ))}
         </div>

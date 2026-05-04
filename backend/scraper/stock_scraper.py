@@ -217,19 +217,17 @@ def run_technical_model(price_df: pd.DataFrame) -> Optional[dict]:
         from pathlib import Path
 
         import numpy as np
-        import tensorflow as tf  # type: ignore
+        from keras.models import load_model
+        from huggingface_hub import hf_hub_download
 
-        root = Path(__file__).resolve().parents[2]
-        model_path   = root / "models" / "technical_model" / "gru_stock_classifier-2.keras"
-        feature_path = root / "models" / "technical_model" / "feature_columns.json"
-
-        if not model_path.exists() or not feature_path.exists():
-            return None
+        repo_id = "Rishabhkapur/financial-analysis-upgrade-technical"
+        model_path = hf_hub_download(repo_id=repo_id, filename="gru_stock_classifier-2.keras", repo_type="model")
+        feature_path = hf_hub_download(repo_id=repo_id, filename="feature_columns.json", repo_type="model")
 
         with open(feature_path) as f:
             feature_cols = json.load(f)
 
-        model = tf.keras.models.load_model(str(model_path))
+        model = load_model(model_path)
 
         df_feat = _add_technical_features(price_df).dropna(subset=feature_cols)
         if df_feat.empty or len(df_feat) < 30:
